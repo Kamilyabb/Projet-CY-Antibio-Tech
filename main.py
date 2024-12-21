@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import numpy as np
 
 # Créer les dossiers nécessaires
 os.makedirs("output", exist_ok=True)
@@ -21,9 +22,12 @@ print("Colonnes après normalisation :", data.columns)
 print("Valeurs uniques dans 'sample_type' :", data['sample_type'].unique())
 print("Valeurs uniques dans 'treatment' :", data['treatment'].unique())
 
-# Étape 5 : Filtrage des données fécales
-if 'sample_type' in data.columns and 'mouse_id' in data.columns and 'counts_live_bacteria_per_wet_g' in data.columns:
-    fecal_data = data[data['sample_type'] == 'fecal'][['mouse_id', 'treatment', 'experimental_day', 'counts_live_bacteria_per_wet_g']]
+# Étape 5 : Appliquer la transformation log10
+data['log_counts'] = np.log10(data['counts_live_bacteria_per_wet_g'].replace(0, np.nan))
+
+# Filtrage des données fécales
+if 'sample_type' in data.columns and 'mouse_id' in data.columns and 'log_counts' in data.columns:
+    fecal_data = data[data['sample_type'] == 'fecal'][['mouse_id', 'treatment', 'experimental_day', 'log_counts']]
     print("Données fécales après filtrage :")
     print(fecal_data.head())
     fecal_data.to_csv("output/fecal_data.csv", index=False)
@@ -39,7 +43,7 @@ if not fecal_data.empty:
         print(f"Traitement de la souris {mouse}...")
         treatment = group['treatment'].iloc[0]
         color = 'blue' if treatment == 'placebo' else 'orange'
-        plt.plot(group['experimental_day'], group['counts_live_bacteria_per_wet_g'], 
+        plt.plot(group['experimental_day'], group['log_counts'], 
                  label=f"{treatment} - Mouse {mouse}" if mouse == 1 else "", 
                  alpha=0.6, color=color)
 
@@ -54,8 +58,8 @@ else:
     print("Pas de données fécales disponibles pour créer le graphique.")
 
 # Étape 7 : Filtrage des données pour le graphique violon (cécal)
-if 'sample_type' in data.columns and 'experimental_day' in data.columns and 'counts_live_bacteria_per_wet_g' in data.columns:
-    cecal_data = data[(data['sample_type'] == 'cecal') & (data['experimental_day'] == 0)][['treatment', 'counts_live_bacteria_per_wet_g']]
+if 'sample_type' in data.columns and 'experimental_day' in data.columns and 'log_counts' in data.columns:
+    cecal_data = data[(data['sample_type'] == 'cecal') & (data['experimental_day'] == 0)][['treatment', 'log_counts']]
     print("Données cécales après filtrage :")
     print(cecal_data.head())
     cecal_data.to_csv("output/cecal_data.csv", index=False)
@@ -66,7 +70,7 @@ else:
 # Étape 8 : Création du graphique violon (cécal)
 if not cecal_data.empty:
     plt.figure(figsize=(8, 6))
-    sns.violinplot(data=cecal_data, x='treatment', y='counts_live_bacteria_per_wet_g', 
+    sns.violinplot(data=cecal_data, x='treatment', y='log_counts', 
                    palette={'placebo': 'blue', 'ABX': 'orange'})
     plt.title("Cecal Live Bacteria")
     plt.xlabel("Treatment")
@@ -77,8 +81,8 @@ else:
     print("Pas de données cécales disponibles pour créer le graphique.")
 
 # Étape 9 : Filtrage des données pour le graphique violon (iléon)
-if 'sample_type' in data.columns and 'experimental_day' in data.columns and 'counts_live_bacteria_per_wet_g' in data.columns:
-    ileal_data = data[(data['sample_type'] == 'ileal') & (data['experimental_day'] == 0)][['treatment', 'counts_live_bacteria_per_wet_g']]
+if 'sample_type' in data.columns and 'experimental_day' in data.columns and 'log_counts' in data.columns:
+    ileal_data = data[(data['sample_type'] == 'ileal') & (data['experimental_day'] == 0)][['treatment', 'log_counts']]
     print("Données iléales après filtrage :")
     print(ileal_data.head())
     ileal_data.to_csv("output/ileal_data.csv", index=False)
@@ -89,7 +93,7 @@ else:
 # Étape 10 : Création du graphique violon (iléon)
 if not ileal_data.empty:
     plt.figure(figsize=(8, 6))
-    sns.violinplot(data=ileal_data, x='treatment', y='counts_live_bacteria_per_wet_g', 
+    sns.violinplot(data=ileal_data, x='treatment', y='log_counts', 
                    palette={'placebo': 'blue', 'ABX': 'orange'})
     plt.title("Ileal Live Bacteria")
     plt.xlabel("Treatment")
